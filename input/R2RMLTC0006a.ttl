@@ -1,0 +1,105 @@
+@prefix rr: <http://www.w3.org/ns/r2rml#> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix ex: <http://example.com/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dept: <http://example.com/dept#> .
+@base <http://example.com/base/> .
+
+<#DeptTableView> rr:sqlQuery """
+SELECT DEPTNO,
+       DNAME,
+       LOC,
+       (SELECT COUNT(*) FROM EMP WHERE EMP.DEPTNO=DEPT.DEPTNO) AS STAFF
+FROM DEPT;
+""";
+                 rr:sqlVersion rr:SQL2008 .
+
+<#DeptTableView1> rr:tableName "DEPT" .
+
+<TriplesMap1>
+    a rr:TriplesMap;
+    
+    rr:logicalTable [ rr:tableName "\"Student\"" ];
+
+    rr:subjectMap [ rr:constant ex:BadStudent;  
+    				rr:graphMap [ rr:constant <http://example.com/graph/student> ]; ]; 
+	
+    rr:predicateObjectMap
+    [ 
+      rr:predicateMap [ rr:constant ex:description ]; 
+      rr:objectMap    [ rr:constant "Bad Student"; ]
+    ]
+    .
+
+[]
+    a rr:TriplesMap;
+
+    rr:logicalTable [ rr:tableName "\"Student\"" ];
+
+    rr:subjectMap [ rr:template "{\"Name\"}"; rr:termType rr:BlankNode ];
+
+    rr:predicateObjectMap
+        [
+            rr:predicate 	  foaf:name;
+            rr:objectMap    [ rr:column "\"Name\"" ]
+        ]
+.
+
+<TriplesMap2>
+    a rr:TriplesMap;
+
+    rr:logicalTable [ rr:tableName "\"Student\"" ];
+
+    rr:subjectMap [ rr:constant ex:BadStudent;
+                    rr:graphMap [ rr:constant <http://example.com/graph/student> ]; ];
+
+    rr:predicateObjectMap
+        [
+            rr:predicateMap [ rr:constant ex:description ];
+            rr:objectMap    [ rr:constant "Bad Student"; ]
+        ]
+.
+
+<TriplesMap3>
+    a rr:TriplesMap;
+
+    rr:logicalTable [
+                        rr:sqlQuery """
+                       Select ('Student' || ID ) AS StudentId
+                            , "ID"
+                            , "Name"
+					, 1 AS "ID"
+                       from "Student"
+                       """
+                    ];
+
+    rr:subjectMap [ rr:column "StudentId"; ];
+
+    rr:predicateObjectMap
+        [
+            rr:predicate		ex:id ;
+            rr:objectMap		[ rr:column "\"ID\""; ]
+        ];
+
+.
+
+<TriplesMap4>
+    a rr:TriplesMap;
+    rr:logicalTable [ rr:sqlQuery """
+       SELECT ('Department' || "deptno") AS "deptId"
+            , "deptno"
+            , "dname"
+            , "loc"
+       FROM "DEPT"
+       """ ];
+
+    rr:subjectMap [ rr:column "\"deptId\""; rr:termType rr:BlankNode;
+                    rr:inverseExpression "{\"deptno\"} = substr({\"deptId\"},length('Department')+1)"];
+
+    rr:predicateObjectMap
+        [
+            rr:predicate	dept:location ;
+            rr:objectMap	[ rr:column "\"loc\"" ]
+        ];
+
+.
