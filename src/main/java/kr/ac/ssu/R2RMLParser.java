@@ -36,7 +36,8 @@ public class R2RMLParser {
         for (String triplesMap: triplesMaps) {
             System.out.println("triples map: " + triplesMap);
 
-            String logicalTable = parser.getLogicalTableOf(triplesMap);
+            // logical table
+            String logicalTable = parser.getLogicalTable(triplesMap);
             System.out.println("logical table: " + logicalTable);
 
             System.out.println("sql query: " + parser.getSQLQuery(logicalTable));
@@ -46,16 +47,67 @@ public class R2RMLParser {
             for (URI sqlVersion: sqlVersions)
                 System.out.println("sql version: " + sqlVersion);
 
-            String subjectMap = parser.getSubjectMapOf(triplesMap);
+            // subject map
+            String subjectMap = parser.getSubjectMap(triplesMap);
             System.out.println("subject map: " + subjectMap);
 
-            System.out.println("constant: " + parser.getIRIConstantOf(subjectMap));
-            System.out.println("column: " + parser.getColumnOf(subjectMap));
-            System.out.println("template: " + parser.getTemplateOf(subjectMap));
-            System.out.println("term type: " + parser.getTermTypeOf(subjectMap));
-            System.out.println("inverse expression: " + parser.getInverseExpressionOf(subjectMap));
-        }
+            Set<URI> classes = parser.getClasses(subjectMap);
+            for (URI classIRI: classes)
+                System.out.println("class: " + classIRI);
 
+            System.out.println("constant: " + parser.getIRIConstant(subjectMap));
+            System.out.println("column: " + parser.getColumn(subjectMap));
+            System.out.println("template: " + parser.getTemplate(subjectMap));
+            System.out.println("term type: " + parser.getTermType(subjectMap));
+            System.out.println("inverse expression: " + parser.getInverseExpression(subjectMap));
+
+            // predicate object map
+            Set<String> predicateObjectMaps = parser.getPredicateObjectMaps(triplesMap);
+            for (String predicateObjectMap: predicateObjectMaps) {
+                System.out.println("predicate object map: " + predicateObjectMap);
+
+                // predicate or predicate map
+                URI predicate = parser.getPredicate(predicateObjectMap);
+                if (predicate == null) {
+                    String predicateMap = parser.getPredicateMap(predicateObjectMap);
+                    predicate = parser.getIRIConstant(predicateMap);
+                }
+                System.out.println("predicate: " + predicate);
+
+                // object or object map
+                URI IRIObject = parser.getIRIObject(predicateObjectMap);
+                System.out.println("object: " + IRIObject + ", which is an IRI");
+                String literalObject = parser.getLiteralObject(predicateObjectMap);
+                System.out.println("object: " + literalObject + ", which is a literal");
+                if (IRIObject == null && literalObject == null) {
+                    String objectMap = parser.getObjectMap(predicateObjectMap);
+                    System.out.println(objectMap);
+
+                    URI IRIConstant = parser.getIRIConstant(objectMap);
+                    System.out.println("constant: " + IRIConstant + ", which is an IRI");
+                    String literalConstant = parser.getLiteralConstant(objectMap);
+                    System.out.println("constant: " + literalConstant + ", which is a literal");
+
+                    System.out.println("column: " + parser.getColumn(objectMap));
+                    System.out.println("template: " + parser.getTemplate(objectMap));
+                    System.out.println("term type: " + parser.getTermType(objectMap));
+                    System.out.println("inverse expression: " + parser.getInverseExpression(objectMap));
+                    System.out.println("language tag: " + parser.getLanguage(objectMap));
+                    System.out.println("datatype: " + parser.getDatatype(objectMap));
+
+                    // referencing object map
+                    String parentTriplesMap = parser.getParentTriplesMap(objectMap);
+                    System.out.println("parent triples map: " + parentTriplesMap);
+                    if (parentTriplesMap != null) {
+                        Set<String> joinConditions = parser.getJoinConditions(objectMap);
+                        for (String joinCondition: joinConditions) {
+                            System.out.println("child: " + parser.getChild(joinCondition));
+                            System.out.println("parent: " + parser.getParent(joinCondition));
+                        }
+                    }
+                }
+            }
+        }
     }
 
     public enum Lang {
@@ -95,6 +147,13 @@ public class R2RMLParser {
         Set<String> set = getLiteralObjectsOf(s, p);
 
         return set.size() > 0 ? set.toArray(new String[0])[0] : null;
+    }
+
+    public Set<URI> getClasses(String subjectMap) {
+        Resource s = createResource(subjectMap);
+        Property p = createRRProperty("class");
+
+        return getIRIObjectsOf(s, p);
     }
 
     public Set<URI> getSQLVersions(String logicalTable) {
@@ -155,7 +214,7 @@ public class R2RMLParser {
         return model.createProperty(PrefixMap.getURI("rr").toString(), localName);
     }
 
-    public String getInverseExpressionOf(String termMap) {
+    public String getInverseExpression(String termMap) {
         Resource s = createResource(termMap);
         Property p = createRRProperty("inverseExpression");
 
@@ -164,7 +223,16 @@ public class R2RMLParser {
         return objects.size() > 0 ? objects.toArray(new String[0])[0] : null;
     }
 
-    public String getLanguageOf(String termMap) {
+    public URI getDatatype(String termMap) {
+        Resource s = createResource(termMap);
+        Property p = createRRProperty("datatype");
+
+        Set<URI> objects = getIRIObjectsOf(s, p);
+
+        return objects.size() > 0 ? objects.toArray(new URI[0])[0] : null;
+    }
+
+    public String getLanguage(String termMap) {
         Resource s = createResource(termMap);
         Property p = createRRProperty("language");
 
@@ -173,7 +241,41 @@ public class R2RMLParser {
         return objects.size() > 0 ? objects.toArray(new String[0])[0] : null;
     }
 
-    public URI getTermTypeOf(String termMap) {
+    public String getLiteralObject(String predicateObjectMap) {
+        Resource s = createResource(predicateObjectMap);
+        Property p = createRRProperty("object");
+
+        Set<String> objects = getLiteralObjectsOf(s, p);
+
+        return objects.size() > 0 ? objects.toArray(new String[0])[0] : null;
+    }
+
+    public URI getIRIObject(String predicateObjectMap) {
+        Resource s = createResource(predicateObjectMap);
+        Property p = createRRProperty("object");
+
+        Set<URI> objects = getIRIObjectsOf(s, p);
+
+        return objects.size() > 0 ? objects.toArray(new URI[0])[0] : null;
+    }
+
+    public Set<URI> getGraphs(String subjectMapOrPredicateObjectMap) {
+        Resource s = createResource(subjectMapOrPredicateObjectMap);
+        Property p = createRRProperty("graph");
+
+        return getIRIObjectsOf(s, p);
+    }
+
+    public URI getPredicate(String predicateObjectMap) {
+        Resource s = createResource(predicateObjectMap);
+        Property p = createRRProperty("predicate");
+
+        Set<URI> objects = getIRIObjectsOf(s, p);
+
+        return objects.size() > 0 ? objects.toArray(new URI[0])[0] : null;
+    }
+
+    public URI getTermType(String termMap) {
         Resource s = createResource(termMap);
         Property p = createRRProperty("termType");
 
@@ -182,7 +284,7 @@ public class R2RMLParser {
         return objects.size() > 0 ? objects.toArray(new URI[0])[0] : null;
     }
 
-    public String getTemplateOf(String termMap) {
+    public String getTemplate(String termMap) {
         Resource s = createResource(termMap);
         Property p = createRRProperty("template");
 
@@ -191,7 +293,7 @@ public class R2RMLParser {
         return objects.size() > 0 ? objects.toArray(new String[0])[0] : null;
     }
 
-    public String getColumnOf(String termMap) {
+    public String getColumn(String termMap) {
         Resource s = createResource(termMap);
         Property p = createRRProperty("column");
 
@@ -200,8 +302,8 @@ public class R2RMLParser {
         return objects.size() > 0 ? objects.toArray(new String[0])[0] : null;
     }
 
-    // when the termMap is a subject map, predicate map, or graph map
-    public URI getIRIConstantOf(String termMap) {
+    // when the termMap is a subject map, object map, predicate map, or graph map
+    public URI getIRIConstant(String termMap) {
         Resource s = createResource(termMap);
         Property p = createRRProperty("constant");
 
@@ -210,7 +312,83 @@ public class R2RMLParser {
         return objects.size() > 0 ? objects.toArray(new URI[0])[0] : null;
     }
 
-    public String getSubjectMapOf(String triplesMap) {
+    // when the termMap is an object map
+    public String getLiteralConstant(String termMap) {
+        Resource s = createResource(termMap);
+        Property p = createRRProperty("constant");
+
+        Set<String> objects = getLiteralObjectsOf(s, p);
+
+        return objects.size() > 0 ? objects.toArray(new String[0])[0] : null;
+    }
+
+    public String getParentTriplesMap(String refObjectMap) {
+        Resource s = createResource(refObjectMap);
+        Property p = createRRProperty("parentTriplesMap");
+
+        Set<String> objects = getResourceObjectsOf(s, p);
+
+        return objects.size() > 0 ? objects.toArray(new String[0])[0] : null;
+    }
+
+    public String getObjectMap(String predicateObjectMap) {
+        Resource s = createResource(predicateObjectMap);
+        Property p = createRRProperty("objectMap");
+
+        Set<String> objects = getResourceObjectsOf(s, p);
+
+        return objects.toArray(new String[0])[0];
+    }
+
+    public Set<String> getGraphMaps(String subjectMapOrPredicateObjectMap) {
+        Resource s = createResource(subjectMapOrPredicateObjectMap);
+        Property p = createRRProperty("graphMap");
+
+        return getResourceObjectsOf(s, p);
+    }
+
+    public String getPredicateMap(String predicateObjectMap) {
+        Resource s = createResource(predicateObjectMap);
+        Property p = createRRProperty("predicateMap");
+
+        Set<String> objects = getResourceObjectsOf(s, p);
+
+        return objects.toArray(new String[0])[0];
+    }
+
+    public String getChild(String joinCondition) {
+        Resource s = createResource(joinCondition);
+        Property p = createRRProperty("child");
+
+        Set<String> objects = getLiteralObjectsOf(s, p);
+
+        return objects.toArray(new String[0])[0];
+    }
+
+    public String getParent(String joinCondition) {
+        Resource s = createResource(joinCondition);
+        Property p = createRRProperty("parent");
+
+        Set<String> objects = getLiteralObjectsOf(s, p);
+
+        return objects.toArray(new String[0])[0];
+    }
+
+    public Set<String> getJoinConditions(String refObjectMap) {
+        Resource s = createResource(refObjectMap);
+        Property p = createRRProperty("joinCondition");
+
+        return getResourceObjectsOf(s, p);
+    }
+
+    public Set<String> getPredicateObjectMaps(String triplesMap) {
+        Resource s = createResource(triplesMap);
+        Property p = createRRProperty("predicateObjectMap");
+
+        return getResourceObjectsOf(s, p);
+    }
+
+    public String getSubjectMap(String triplesMap) {
         Resource s = createResource(triplesMap);
         Property p = createRRProperty("subjectMap");
 
@@ -219,7 +397,7 @@ public class R2RMLParser {
         return objects.toArray(new String[0])[0];
     }
 
-    public String getLogicalTableOf(String triplesMap) {
+    public String getLogicalTable(String triplesMap) {
         Resource s = createResource(triplesMap);
         Property p = createRRProperty("logicalTable");
 

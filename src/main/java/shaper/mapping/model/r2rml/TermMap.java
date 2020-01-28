@@ -10,7 +10,7 @@ public abstract class TermMap {
         IRI, BLANKNODE, LITERAL
     }
 
-    private Optional<String> constant; // rr:constant: it must be an IRI in the context of subjectMap.
+    private Optional<String> constant; // rr:constant
     private Optional<SQLSelectField> column; // rr:column
     private Optional<Template> template; // rr:template
     private Optional<TermTypes> termType; // rr:termType

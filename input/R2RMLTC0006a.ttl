@@ -3,6 +3,10 @@
 @prefix ex: <http://example.com/> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix dept: <http://example.com/dept#> .
+@prefix emp: <http://example.com/emp#> .
+@prefix likes: <http://example.com/likes#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @base <http://example.com/base/> .
 
 <#DeptTableView> rr:sqlQuery """
@@ -102,4 +106,286 @@ FROM DEPT;
             rr:objectMap	[ rr:column "\"loc\"" ]
         ];
 
+.
+
+<TriplesMap5>
+    a rr:TriplesMap;
+
+    rr:logicalTable [ rr:tableName "\"Patient\"" ];
+
+    rr:subjectMap [ rr:template "http://example.com/Patient/{\"ID\"}"; ];
+
+    rr:predicateObjectMap
+        [
+            rr:predicate	rdf:type;
+        rr:object		foaf:Person;
+	];
+
+    rr:predicateObjectMap
+    [
+		rr:predicate	ex:id ;
+		rr:objectMap    [ rr:column "\"ID\""; ]
+    ];
+
+    rr:predicateObjectMap
+    [
+      rr:predicate		ex:firstName;
+      rr:objectMap		[ rr:column "\"FirstName\""; ]
+    ];
+
+    rr:predicateObjectMap
+    [
+      rr:predicate		ex:lastName;
+      rr:objectMap		[ rr:column "\"LastName\""; ]
+    ];
+
+    rr:predicateObjectMap
+    [
+      rr:predicate		ex:gender;
+      rr:objectMap		[ rr:column "\"Sex\""; ]
+    ];
+
+.
+
+<TriplesMap6>
+    a rr:TriplesMap;
+    rr:logicalTable [ rr:sqlQuery """
+       SELECT ('Department' || "deptno") AS deptId
+            , "deptno"
+            , "dname"
+            , "loc"
+       FROM "DEPT"
+       """ ];
+
+    rr:subjectMap [ rr:column "deptId"; rr:termType rr:BlankNode;
+                    rr:inverseExpression "{\"deptno\"} = substr({deptId},length('Department')+1)" ];
+
+    rr:predicateObjectMap
+        [
+            rr:predicate		dept:deptno ;
+            rr:objectMap    [ rr:column "\"deptno\""; ]
+        ];
+
+    rr:predicateObjectMap
+        [
+            rr:predicate		dept:name ;
+            rr:objectMap    [ rr:column "\"dname\"" ]
+        ];
+
+    rr:predicateObjectMap
+        [
+            rr:predicate		dept:location ;
+            rr:objectMap    [ rr:column "\"loc\"" ]
+        ];
+
+    rr:predicateObjectMap
+        [
+            rr:predicate		dept:COMPANY ;
+            rr:object			"EXAMPLE Corporation"
+        ]
+.
+
+<TriplesMap7>
+    a rr:TriplesMap;
+    rr:logicalTable [ rr:sqlQuery """
+       SELECT ('http://example.com/emp/' || "empno") AS empURI
+            , "empno"
+            , "ename"
+            , ('http://example.com/emp/job/'|| "job") AS jobTypeURI
+            , "job"
+            , "deptno"
+            , ('http://example.com/emp/etype/'|| "etype") AS empTypeURI
+            , "etype"
+            , ('http://example.com/graph/'|| "job" || '/' || "etype") AS graphURI
+       FROM "EMP"
+       """ ];
+
+    rr:subjectMap [ rr:column "empURI"; ];
+
+    rr:predicateObjectMap
+        [
+            rr:predicate		emp:jobtype ;
+            rr:objectMap    [ rr:column "jobTypeURI"; rr:termType rr:IRI; ]
+        ];
+
+    rr:predicateObjectMap
+        [
+            rr:predicate		rdf:type ;
+            rr:objectMap    [ rr:column "jobTypeURI"; rr:termType rr:IRI; ]
+        ];
+
+    rr:predicateObjectMap
+        [
+            rr:predicate		emp:emptype ;
+            rr:objectMap    [ rr:column "empTypeURI"; rr:termType rr:IRI; ]
+        ];
+
+    rr:predicateObjectMap
+        [
+            rr:predicate		rdf:type ;
+            rr:objectMap    [ rr:column "empTypeURI"; rr:termType rr:IRI; ]
+        ];
+
+    rr:predicateObjectMap
+        [
+            rr:predicate		emp:empno ;
+            rr:objectMap    [ rr:column "\"empno\"" ]
+        ];
+
+    rr:predicateObjectMap
+        [
+            rr:predicate		emp:name ;
+            rr:objectMap    [ rr:column "\"ename\"" ];
+        ];
+
+    rr:predicateObjectMap
+        [
+            rr:predicate		emp:job ;
+            rr:objectMap    [ rr:column "\"job\"" ]
+        ];
+
+    rr:predicateObjectMap
+        [
+            rr:predicate		emp:deptNum ;
+            rr:objectMap    [ rr:column "\"deptno\"" ]
+        ];
+
+    rr:predicateObjectMap
+        [
+            rr:predicate		emp:etype ;
+            rr:objectMap    [ rr:column "\"etype\"" ]
+        ];
+
+    rr:predicateObjectMap [
+                              rr:predicate		emp:c_ref_deptno ;
+                              rr:objectMap    [
+                                                  a rr:RefObjectMap ;
+                                                  rr:parentTriplesMap <TriplesMap6>;
+                                                  rr:joinCondition [
+                                                                       rr:child "\"deptno\"";
+                                                                       rr:parent "\"deptno\"";
+                                                                   ];
+                                              ];
+                          ]
+.
+
+<TriplesMap8>
+    a rr:TriplesMap;
+
+    rr:logicalTable [ rr:tableName  "\"Lives\"" ];
+
+    rr:subjectMap [ rr:template "{\"fname\"}_{\"lname\"}_{\"city\"}"; rr:termType rr:BlankNode; ];
+
+    rr:predicateObjectMap [
+                              rr:predicate rdf:type;
+                              rr:object <Lives>;
+                          ];
+
+    rr:predicateObjectMap
+        [
+            rr:predicate		<IOUs#fname> ;
+            rr:objectMap		[ rr:column "\"fname\""; ]
+        ];
+
+    rr:predicateObjectMap
+        [
+            rr:predicate		<IOUs#lname> ;
+            rr:objectMap		[ rr:column "\"lname\""; ]
+        ];
+
+    rr:predicateObjectMap
+        [
+            rr:predicate		<IOUs#city> ;
+            rr:objectMap		[ rr:column "\"city\""; ]
+        ];
+.
+
+<TriplesMap9>
+    a rr:TriplesMap;
+
+    rr:logicalTable [  rr:sqlQuery """
+						SELECT "Code", "Name", "Lan"
+						FROM "Country"
+						WHERE "Lan" = 'EN';
+                       """ ] ;
+
+    rr:subjectMap [ rr:template "http://example.com/{\"Code\"}" ];
+
+    rr:predicateObjectMap
+        [
+            rr:predicate	rdfs:label;
+            rr:objectMap	[ rr:column "\"Name\""; rr:language "en" ]
+        ]
+.
+
+<TriplesMap10>
+    a rr:TriplesMap;
+    rr:logicalTable [ rr:sqlQuery """
+       Select ('Department' || "deptno") AS deptId
+            , "deptno"
+            , "dname"
+            , "loc"
+         from "DEPT"
+       """ ];
+
+    rr:subjectMap [ rr:column "deptId"; rr:termType rr:BlankNode;
+                    rr:inverseExpression "{\"deptno\"} = substr({deptId},length('Department')+1)"];
+
+    rr:predicateObjectMap
+        [
+            rr:predicate		dept:deptno ;
+            rr:objectMap    [ rr:column "\"deptno\""; rr:datatype xsd:positiveInteger ]
+        ];
+
+    rr:predicateObjectMap
+        [
+            rr:predicate		dept:name ;
+            rr:objectMap    [ rr:column "\"dname\"" ]
+        ];
+
+    rr:predicateObjectMap
+        [
+            rr:predicate		dept:location ;
+            rr:objectMap    [ rr:column "\"loc\"" ]
+        ];
+
+    rr:predicateObjectMap
+        [
+            rr:predicate		dept:COMPANY ;
+            rr:objectMap		[ rr:constant "EXAMPLE Corporation"; ]
+        ]
+.
+
+<TriplesMap11>
+    a rr:TriplesMap;
+
+    rr:logicalTable [ rr:tableName  "\"Student\"" ];
+
+    rr:subjectMap
+        [
+            rr:template	"http://example.com/resource/student_{\"ID\"}";
+            rr:class	<http://example.com/ontology/Student>;
+            rr:graph	<http://example.com/graph/students> ;
+        ];
+
+    rr:predicateObjectMap
+        [
+            rr:predicate	foaf:name ;
+            rr:objectMap	[ rr:column "\"Name\""; ];
+            rr:graph		<http://example.com/graph/students> ;
+        ];
+
+    rr:predicateObjectMap
+        [
+            rr:predicate	<http://example.com/ontology/practises> ;
+            rr:objectMap	[
+                                a rr:RefObjectMap ;
+                                rr:parentTriplesMap <TriplesMap2>;
+                                rr:joinCondition [
+                                                     rr:child "\"Sport\"" ;
+                                                     rr:parent "\"ID\"" ;
+                                                 ]
+                            ];
+            rr:graph	<http://example.com/graph/practise> ;
+        ];
 .
