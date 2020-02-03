@@ -60,7 +60,10 @@ FROM DEPT;
     rr:predicateObjectMap
         [
             rr:predicateMap [ rr:constant ex:description ];
-            rr:objectMap    [ rr:constant "Bad Student"; ]
+            rr:objectMap    [
+                                rr:template "\\{\\{\\{ \\\\o/ {TITLE} \\\\o/ \\}\\}\\}";
+                                rr:termType rr:Literal;
+                            ]
         ]
 .
 

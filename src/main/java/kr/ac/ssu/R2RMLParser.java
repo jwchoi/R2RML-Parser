@@ -12,104 +12,6 @@ import java.util.TreeSet;
 
 public class R2RMLParser {
 
-    public static void main( String[] args ) {
-        R2RMLParser parser = new R2RMLParser("input/R2RMLTC0006a.ttl", Lang.TTL);
-
-        Map<String, String> prefixMap = parser.getPrefixes();
-        Set<String> keySet = prefixMap.keySet();
-        for (String key: keySet)
-            System.out.println("prefix: " + key + ", URI: " + prefixMap.get(key));
-
-        Set<URI> logicalTablesWithURI = parser.getLogicalTables();
-        for (URI logicalTable: logicalTablesWithURI) {
-            System.out.println("logical table: " + logicalTable);
-
-            System.out.println("sql query: " + parser.getSQLQuery(logicalTable.toString()));
-            System.out.println("table name: " + parser.getTableName(logicalTable.toString()));
-
-            Set<URI> sqlVersions = parser.getSQLVersions(logicalTable.toString());
-            for (URI sqlVersion: sqlVersions)
-                System.out.println("sql version: " + sqlVersion);
-        }
-
-        Set<String> triplesMaps = parser.getTriplesMaps();
-        for (String triplesMap: triplesMaps) {
-            System.out.println("triples map: " + triplesMap);
-
-            // logical table
-            String logicalTable = parser.getLogicalTable(triplesMap);
-            System.out.println("logical table: " + logicalTable);
-
-            System.out.println("sql query: " + parser.getSQLQuery(logicalTable));
-            System.out.println("table name: " + parser.getTableName(logicalTable));
-
-            Set<URI> sqlVersions = parser.getSQLVersions(logicalTable);
-            for (URI sqlVersion: sqlVersions)
-                System.out.println("sql version: " + sqlVersion);
-
-            // subject map
-            String subjectMap = parser.getSubjectMap(triplesMap);
-            System.out.println("subject map: " + subjectMap);
-
-            Set<URI> classes = parser.getClasses(subjectMap);
-            for (URI classIRI: classes)
-                System.out.println("class: " + classIRI);
-
-            System.out.println("constant: " + parser.getIRIConstant(subjectMap));
-            System.out.println("column: " + parser.getColumn(subjectMap));
-            System.out.println("template: " + parser.getTemplate(subjectMap));
-            System.out.println("term type: " + parser.getTermType(subjectMap));
-            System.out.println("inverse expression: " + parser.getInverseExpression(subjectMap));
-
-            // predicate object map
-            Set<String> predicateObjectMaps = parser.getPredicateObjectMaps(triplesMap);
-            for (String predicateObjectMap: predicateObjectMaps) {
-                System.out.println("predicate object map: " + predicateObjectMap);
-
-                // predicate or predicate map
-                URI predicate = parser.getPredicate(predicateObjectMap);
-                if (predicate == null) {
-                    String predicateMap = parser.getPredicateMap(predicateObjectMap);
-                    predicate = parser.getIRIConstant(predicateMap);
-                }
-                System.out.println("predicate: " + predicate);
-
-                // object or object map
-                URI IRIObject = parser.getIRIObject(predicateObjectMap);
-                System.out.println("object: " + IRIObject + ", which is an IRI");
-                String literalObject = parser.getLiteralObject(predicateObjectMap);
-                System.out.println("object: " + literalObject + ", which is a literal");
-                if (IRIObject == null && literalObject == null) {
-                    String objectMap = parser.getObjectMap(predicateObjectMap);
-                    System.out.println(objectMap);
-
-                    URI IRIConstant = parser.getIRIConstant(objectMap);
-                    System.out.println("constant: " + IRIConstant + ", which is an IRI");
-                    String literalConstant = parser.getLiteralConstant(objectMap);
-                    System.out.println("constant: " + literalConstant + ", which is a literal");
-
-                    System.out.println("column: " + parser.getColumn(objectMap));
-                    System.out.println("template: " + parser.getTemplate(objectMap));
-                    System.out.println("term type: " + parser.getTermType(objectMap));
-                    System.out.println("inverse expression: " + parser.getInverseExpression(objectMap));
-                    System.out.println("language tag: " + parser.getLanguage(objectMap));
-                    System.out.println("datatype: " + parser.getDatatype(objectMap));
-
-                    // referencing object map
-                    String parentTriplesMap = parser.getParentTriplesMap(objectMap);
-                    System.out.println("parent triples map: " + parentTriplesMap);
-                    if (parentTriplesMap != null) {
-                        Set<String> joinConditions = parser.getJoinConditions(objectMap);
-                        for (String joinCondition: joinConditions) {
-                            System.out.println("child: " + parser.getChild(joinCondition));
-                            System.out.println("parent: " + parser.getParent(joinCondition));
-                        }
-                    }
-                }
-            }
-        }
-    }
-
     public enum Lang {
 //        RDF_XML("RDF/XML"), N_TRIPLE("N-TRIPLE"), N3("N3"),
         TURTLE("TURTLE"), TTL("TTL");
@@ -201,7 +103,7 @@ public class R2RMLParser {
         return subjectsOfLogicalTable;
     }
 
-    private boolean isURI(String str) {
+    public static boolean isURI(String str) {
         try { return new org.apache.jena.ext.xerces.util.URI(str) != null; }
         catch (org.apache.jena.ext.xerces.util.URI.MalformedURIException e) { return false; }
     }
@@ -241,22 +143,18 @@ public class R2RMLParser {
         return objects.size() > 0 ? objects.toArray(new String[0])[0] : null;
     }
 
-    public String getLiteralObject(String predicateObjectMap) {
+    public Set<String> getLiteralObjects(String predicateObjectMap) {
         Resource s = createResource(predicateObjectMap);
         Property p = createRRProperty("object");
 
-        Set<String> objects = getLiteralObjectsOf(s, p);
-
-        return objects.size() > 0 ? objects.toArray(new String[0])[0] : null;
+        return getLiteralObjectsOf(s, p);
     }
 
-    public URI getIRIObject(String predicateObjectMap) {
+    public Set<URI> getIRIObjects(String predicateObjectMap) {
         Resource s = createResource(predicateObjectMap);
         Property p = createRRProperty("object");
 
-        Set<URI> objects = getIRIObjectsOf(s, p);
-
-        return objects.size() > 0 ? objects.toArray(new URI[0])[0] : null;
+        return getIRIObjectsOf(s, p);
     }
 
     public Set<URI> getGraphs(String subjectMapOrPredicateObjectMap) {
@@ -266,13 +164,11 @@ public class R2RMLParser {
         return getIRIObjectsOf(s, p);
     }
 
-    public URI getPredicate(String predicateObjectMap) {
+    public Set<URI> getPredicates(String predicateObjectMap) {
         Resource s = createResource(predicateObjectMap);
         Property p = createRRProperty("predicate");
 
-        Set<URI> objects = getIRIObjectsOf(s, p);
-
-        return objects.size() > 0 ? objects.toArray(new URI[0])[0] : null;
+        return getIRIObjectsOf(s, p);
     }
 
     public URI getTermType(String termMap) {
@@ -331,13 +227,11 @@ public class R2RMLParser {
         return objects.size() > 0 ? objects.toArray(new String[0])[0] : null;
     }
 
-    public String getObjectMap(String predicateObjectMap) {
+    public Set<String> getObjectMaps(String predicateObjectMap) {
         Resource s = createResource(predicateObjectMap);
         Property p = createRRProperty("objectMap");
 
-        Set<String> objects = getResourceObjectsOf(s, p);
-
-        return objects.toArray(new String[0])[0];
+        return getResourceObjectsOf(s, p);
     }
 
     public Set<String> getGraphMaps(String subjectMapOrPredicateObjectMap) {
@@ -347,13 +241,11 @@ public class R2RMLParser {
         return getResourceObjectsOf(s, p);
     }
 
-    public String getPredicateMap(String predicateObjectMap) {
+    public Set<String> getPredicateMaps(String predicateObjectMap) {
         Resource s = createResource(predicateObjectMap);
         Property p = createRRProperty("predicateMap");
 
-        Set<String> objects = getResourceObjectsOf(s, p);
-
-        return objects.toArray(new String[0])[0];
+        return getResourceObjectsOf(s, p);
     }
 
     public String getChild(String joinCondition) {
@@ -495,7 +387,8 @@ public class R2RMLParser {
     private Optional<URI> getBase(File r2rmlFile) {
         Optional<URI> base = Optional.empty();
         try(LineNumberReader reader = new LineNumberReader(new FileReader(r2rmlFile))) {
-            for (String line = reader.readLine().trim(); line != null; line = reader.readLine().trim()) {
+            for (String line = reader.readLine(); line != null; line = reader.readLine()) {
+                line = line.trim();
                 if (line.startsWith("@base")
                         || line.regionMatches(true, 0, "BASE", 0, 4)) {
                     base = Optional.of(URI.create(line.substring(line.indexOf("<") + 1, line.lastIndexOf(">"))));
