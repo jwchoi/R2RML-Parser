@@ -20,10 +20,6 @@ public final class PrefixMap {
 		map.put(URI.create("http://www.w3.org/ns/r2rml#"), "rr");
 	}
 
-	public static String getPrefix(URI uri) {
-		return map.get(uri);
-	}
-
 	public static URI getURI(String prefix) {
 		Set<Map.Entry<URI, String>> entrySet = map.entrySet();
 
